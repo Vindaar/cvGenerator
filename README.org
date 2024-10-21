@@ -1,0 +1,13 @@
+* cvGenerator
+
+Tired of using tools as slow as molasses for your CV? Or hate dealing
+with LaTeX directly? And you already use Emacs and Org mode?
+
+Then this might be the thing for you.
+
+The uninspiringly named ~cvGenerator~ is a simple library, which uses
+Org mode files as data sources, parses them and then produces a LaTeX
+based CV. For the time being we fill the [[https://github.com/liantze/AltaCV][AltaCV]] template, but I might
+add other templates too.
+
+I'll provide some more explanation and examples soon.

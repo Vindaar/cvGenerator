@@ -177,6 +177,13 @@ proc getCompanyOrUni[T](pList: T): string =
     if x.len > 0:
       return x
 
+proc getDescription[T: SomeEntry](el: T): string =
+  let itemizeSec = el.description.escapeLatex.itemizeData.toItemize()
+  if itemizeSec.len > 0:
+    result = itemizeSec
+  else:
+    result = el.description.escapeLatex
+
 proc work(cv: CV): string =
 
   result = latex:
@@ -194,13 +201,7 @@ proc work(cv: CV): string =
     elif el.pList.country.len > 0:
       loc = &"{el.pList.country}"
 
-    let itemizeSec = el.description.escapeLatex.itemizeData.toItemize()
-    var desc: string
-    if itemizeSec.len > 0:
-      desc = itemizeSec
-    else:
-      desc = el.description.escapeLatex
-
+    let desc = getDescription(el)
     let company = el.pList.getCompanyOrUni()
 
     let event = latex:
@@ -267,13 +268,7 @@ proc projects(cv: CV): string =
   for el in cv.projects:
     # XXX: determine what type of employemnt and decide the "uni" "corporation" etc field
     let fromTo = el.pList.getDates(cv.cfg.projIncludeDates)
-    let itemizeSec = el.description.escapeLatex.itemizeData.toItemize()
-    var desc: string
-    if itemizeSec.len > 0:
-      desc = itemizeSec
-    else:
-      desc = el.description.escapeLatex
-    echo "DESC: ", desc
+    let desc = el.getDescription()
     let event = latex:
       \cvevent{\href{`el.pList.links`}{`el.title.escapeLatex`}}{`fromTo`}{}{}
       `desc`
@@ -377,10 +372,13 @@ proc education(cv: CV): string =
       thesis = r"\textbf{Thesis:} " & el.pList.thesis & r"\\"
     if el.pList.finalGrade.len > 0:
       grade = r"\textbf{Final grade:} " & el.pList.finalGrade & r"\\"
+
+    let desc = el.getDescription()
     let event = latex:
       \cvevent{`el.title.escapeLatex`}{`el.pList.uni`}{`fromTo`}{}
       `thesis`
       `grade`
+      `desc`
       \divider
     result.add event
 

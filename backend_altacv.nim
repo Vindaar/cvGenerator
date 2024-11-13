@@ -431,6 +431,8 @@ proc genCv*(cv: CV): string =
   # 1. Left hand side
   if cfWork in cv.fieldsAdded:
     doc.addIt cv.work()
+  if cfProjects in cv.fieldsAdded and cv.cfg.projLeft:
+    doc.addIt cv.projects()
   #doc.add dayInLife() & "\n"
   #doc.add publications() & "\n"
 
@@ -444,7 +446,7 @@ proc genCv*(cv: CV): string =
     doc.addIt cv.languages()
   if cfSkills in cv.fieldsAdded:
     doc.addIt cv.skills()
-  if cfProjects in cv.fieldsAdded:
+  if cfProjects in cv.fieldsAdded and not cv.cfg.projLeft:
     doc.addIt cv.projects()
 
   #doc.add lifePhilosophy() & "\n"

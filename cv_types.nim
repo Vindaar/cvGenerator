@@ -68,6 +68,7 @@ type
     projTo* = "To"
     projLinks* = "Links"
     projIncludeDates* = true
+    projLeft* = true # whether to print projects in left or right column
 
     # Skills
     skillKey* = "Skills"

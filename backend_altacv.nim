@@ -324,16 +324,25 @@ proc strengths(): string =
     \cvtag{r"Product Management \& Marketing"}
 
 proc skills(cv: CV): string =
+
+  const Cutoff = 42 # cutoff for characters in a line before forced linebreak
+
   result = latex:
     \cvsection{Skills}
 
   var skills: string
   for sec in cv.skills:
     ## XXX: add `\divider` after each skill section?
+    var lineLen = 0
     for x in sec.skills:
       let skill = latex:
-        \cvtag{`x`}
+        \cvtag{`x.escapeLatex`}
+      inc lineLen, x.len
+      if lineLen > Cutoff:
+        skills.add r"\\"
+        lineLen = x.len
       skills.add skill
+
     skills.add "\n"
     skills.add latex do:
       \divider\smallskip

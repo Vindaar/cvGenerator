@@ -1,7 +1,11 @@
 import orgparser, latexdsl_nochecks
 import std / [macros, options, strutils]
+from std / os import copyFile, parentDir, `/`, expandTilde, createDir
 
 import ./cv_types, ./backend_altacv
+export cv_types
+
+const ProjectDir = currentSourcePath().parentDir()
 
 iterator desiredSubsections(org: OrgNode): OrgNode =
   ## Yields all subsections that are _not_ tagged with `:noexport:`.
@@ -24,7 +28,7 @@ macro setFields(cv, p, org: typed, prefix: string): untyped =
 
   echo result.repr
 
-proc personalInfo(cv: var CV) =
+proc personalInfo*(cv: var CV) =
   let pers = findSection(cv.org, cv.cfg.pKey)
   let pList = pers.propertyList()
   var p: PersonalInfo
@@ -32,7 +36,7 @@ proc personalInfo(cv: var CV) =
   cv.personal = p
   cv.fieldsAdded.incl cfPersonal
 
-proc education(cv: var CV) =
+proc education*(cv: var CV) =
   let eduOrg = findSection(cv.org, cv.cfg.eKey)
   # iterate all subsections of education
   var edu: Education
@@ -51,7 +55,7 @@ proc education(cv: var CV) =
   cv.education = edu
   cv.fieldsAdded.incl cfEducation
 
-proc work(cv: var CV) =
+proc work*(cv: var CV) =
   let workOrg = findSection(cv.org, cv.cfg.wKey)
   # iterate all subsections of education
   var work: Work
@@ -70,7 +74,7 @@ proc work(cv: var CV) =
   cv.work = work
   cv.fieldsAdded.incl cfWork
 
-proc languages(cv: var CV) =
+proc languages*(cv: var CV) =
   let langOrg = findSection(cv.org, cv.cfg.lKey)
   # iterate all subsections of education
   var lang: Languages
@@ -79,7 +83,7 @@ proc languages(cv: var CV) =
   let mOpt = pList.getProperty("MotherTongue")
   if mOpt.isNone:
     raise newException(ValueError, "No mother tongue set. Set a mother tongue to the properties " &
-      "of the " & $cv.cfg.lKey & " section with `:MotherTongue:` as the key.")
+      "of the " & $cv.cfg.lKey & " section with `:" & $cv.cfg.lMotherTongue & ":` as the key.")
   lang.motherTongue = $mOpt.get.value # must exist
   for e in desiredSubsections(langOrg):
     var entry: Language
@@ -96,7 +100,7 @@ proc languages(cv: var CV) =
   cv.langs = lang
   cv.fieldsAdded.incl cfLangs
 
-proc projects(cv: var CV) =
+proc projects*(cv: var CV) =
   let projOrg = findSection(cv.org, cv.cfg.projKey)
   # iterate all subsections of education
   var proj: Projects
@@ -122,7 +126,7 @@ proc addSkillSection(sec: OrgNode, name: string): SkillSection =
   for (skill, _) in ($body).itemizeData():
     result.skills.add skill.strip(chars = {' ', '-'})
 
-proc skills(cv: var CV, includeSections: seq[string] = @[]) =
+proc skills*(cv: var CV, includeSections: seq[string] = @[]) =
   let skillOrg = findSection(cv.org, cv.cfg.skillKey)
   # iterate all subsections of education
   var skills: Skills
@@ -137,17 +141,64 @@ proc skills(cv: var CV, includeSections: seq[string] = @[]) =
   cv.skills = skills
   cv.fieldsAdded.incl cfSkills
 
-const path = "/home/basti/org/Documents/CV_data/CV_data_october2024.org"
+proc bibliography*(cv: var CV) =
+  ## Adds the bibliography to the CV. The input file is a `.bib` file
+  ## which is by default defined in the `Publications` (`bKey`) section of the
+  ## Org file using the `Bibliography` (`bFile`) property.
+  let bibOrg = findSection(cv.org, cv.cfg.bKey)
+  let pList = bibOrg.propertyList()
+  let pOpt = pList.getProperty(cv.cfg.bFile)
+  echo cv.cfg.bFile
+  echo pOpt
+  echo pList
+  if pOpt.isNone:
+    raise newException(ValueError, "No bibliography is set. Set a bibliography file to the properties " &
+      "of the " & $cv.cfg.bKey & " section with `:" & $cv.cfg.bFile & ":` as the key.")
+  cv.bibliography = $pOpt.get.value
+  cv.fieldsAdded.incl cfPublications
 
-var cv = initCV(path, bkAltaCV)
-cv.cfg.projIncludeDates = false
-cv.cfg.projKey = "Selected Projects"
-cv.personalInfo()
-cv.education()
-cv.work()
-cv.languages()
-cv.projects()
-cv.skills(@["Programming languages", "Other"])
+proc compile*(cv: CV, path: string) =
+  ## Generate the LaTeX file and compile it on the selected backend
+  # 1. potentially create the target dir
+  let path = path.expandTilde()
+  echo "Creating dir: ", path.parentDir()
+  createDir(path.parentDir())
+  # 2. copy the AltaCV file & Biblatex config to the target location
+  ## XXX: case by backend
+  const files = ["altacv.cls", "pubs-num.cfg"]
+  for f in files:
+    copyFile(ProjectDir / "resources" / f, path.parentDir() / f)
+  # 3. generate the TeX code
+  let cvTex = cv.genCV()
+  # 4. compile it
+  compile(path, cvTex, fullBody = true)
 
-let cvTex = cv.genCV()
-compile("/tmp/test_cv.tex", cvTex, fullBody = true)
+when isMainModule:
+  # Example usage
+  #const path = "/home/basti/org/Documents/CV_data/CV_data_october2024.org"
+  #const path = "/home/basti/org/Documents/CV_data/CV_data_october2024_panocular_ai.org"
+  const path = "/home/basti/org/Documents/CV_data/CV_data_october2024_all.org"
+
+  var cv = initCV(path, bkAltaCV)
+  # Adujst some configuration
+  # do not include dates for projects
+  cv.cfg.projIncludeDates = false
+  # Overwrite the default name of a section, e.g. for the Projects section:
+  cv.cfg.projKey = "Selected Projects"
+  # print projects on the right
+  cv.cfg.projLeft = false
+  # Add all the fields we care about
+  cv.personalInfo()
+  cv.education()
+  cv.work()
+  cv.languages()
+  cv.projects()
+  # By default `skills` uses all subsections, but we can restrict it
+  cv.skills() #@["Programming languages", "Other"])
+
+  # print bibliography on the left
+  cv.cfg.bLeft = true
+  cv.bibliography()
+
+  # And compile it
+  cv.compile("/tmp/test_cv.tex")

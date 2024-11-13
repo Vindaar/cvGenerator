@@ -233,7 +233,7 @@ proc itemizeData*(data: string): seq[Item] =
         result.add el
         el.item.setLen(0)
         el.level = 0
-      let level = line.find(chars = IdentChars + HexDigits) div 2 # two spaces == 1 level
+      let level = line.find(chars = {'-'}) div 2 # two spaces == 1 level
       el.item.add (line & "\n")
       el.level = level
     else:
@@ -255,7 +255,8 @@ proc toItemize*(itms: seq[Item]): string =
       itemizeSec.add "\n\\end{itemize}\n"
     itemizeSec.add "\\item " & (el.item.process()) & "\n"
     level = el.level
-  if itemizeSec.len > 0:
+  while level >= 0:
     itemizeSec.add "\n\\end{itemize}\n"
+    dec level
 
   result = itemizeSec

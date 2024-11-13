@@ -84,12 +84,11 @@ proc setup(cfg: Config): string =
     ## for your publication list
     \input{"pubs-num.cfg"}
 
-proc bibliography(file: string): string =
-  ## XXX: support!
+proc addbibresource(cv: CV): string =
   ## Bibliography file
   result = latex:
     ## sample.bib contains your publications
-    \addbibresource{`file`}
+    \addbibresource{`cv.bibliography`}
 
 proc personal(cv: CV): string =
   ## XXX: Make it so that only fields with content are added
@@ -237,7 +236,8 @@ proc dayInLife(): string =
     # ONLY the currentc column
     \newpage
 
-proc publications(): string =
+proc publications(cv: CV): string =
+  ## XXX: names from example. We currently don't use them
   let names = latex:
     r"Lim/Lian\bibnamedelima Tze,"
     r"Wong/Lian\bibnamedelima Tze,"
@@ -249,20 +249,20 @@ proc publications(): string =
     ## Specify your last name(s) and first name(s) as given in the .bib to automatically bold your own name in the publications list.
     ## One caveat: You need to write \bibnamedelima where there's a space in your name for this to work properly; or write \bibnamedelimi if you use initials in the .bib
     ## You can specify multiple names, especially if you have changed your name or if you need to highlight multiple authors.
-    \mynames{`names`}
+    #\mynames{`names`}
     ## MAKE SURE THERE IS NO SPACE AFTER THE FINAL NAME IN YOUR \mynames LIST
 
     \nocite{"*"}
 
-    \printbibliography[r"heading=pubtype,title={\printinfo{\faBook}{Books}},type=book"]
+    \printbibliography[r"heading=pubtype,title={\printinfo{\faBook}{PhD thesis}}, type=thesis"]
 
     \divider
 
     \printbibliography[r"heading=pubtype,title={\printinfo{\faFile*[regular]}{Journal Articles}}, type=article"]
 
-    \divider
-
-    \printbibliography[r"heading=pubtype,title={\printinfo{\faUsers}{Conference Proceedings}},type=inproceedings"]
+    #\divider
+    #
+    #\printbibliography[r"heading=pubtype,title={\printinfo{\faUsers}{Conference Proceedings}},type=inproceedings"]
 
 proc projects(cv: CV): string =
   result = latex:
@@ -278,8 +278,6 @@ proc projects(cv: CV): string =
       \divider
     result.add event
     #result.add "\n" & r"\newpage"
-
-
 
 ################################################################################
 #######################    Right hand column     ###############################
@@ -418,7 +416,9 @@ proc genCv*(cv: CV): string =
   ## Generate the actual CV by filling the LaTeX template for AltaCV.
   var setup: string
   setup.add cv.cfg.setup()
-  setup.add bibliography("sample.bib")
+  if cfPublications in cv.fieldsAdded:
+    setup.add cv.addbibresource()
+  # setup.add bibliography("sample.bib")
 
   var header: string
   header.add cv.personal()
@@ -433,6 +433,9 @@ proc genCv*(cv: CV): string =
     doc.addIt cv.work()
   if cfProjects in cv.fieldsAdded and cv.cfg.projLeft:
     doc.addIt cv.projects()
+  if cfPublications in cv.fieldsAdded and cv.cfg.bLeft:
+    doc.addIt cv.publications()
+
   #doc.add dayInLife() & "\n"
   #doc.add publications() & "\n"
 
@@ -448,6 +451,10 @@ proc genCv*(cv: CV): string =
     doc.addIt cv.skills()
   if cfProjects in cv.fieldsAdded and not cv.cfg.projLeft:
     doc.addIt cv.projects()
+
+  if cfPublications in cv.fieldsAdded and not cv.cfg.bLeft:
+    doc.addIt cv.publications()
+
 
   #doc.add lifePhilosophy() & "\n"
   #doc.add mostProudOf() & "\n"

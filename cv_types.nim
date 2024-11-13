@@ -73,7 +73,12 @@ type
     # Skills
     skillKey* = "Skills"
 
-  CVFields = enum
+    # Bibliography
+    bKey* = "Publications"
+    bFile* = "Bibliography" # the key in the `Publications` properties containing the file name of the `.bib` file
+    bLeft* = true # whether to print publications in left or right column
+
+  CVFields* = enum
     cfPersonal, cfEducation, cfWork, cfPublications, cfProjects, cfSkills, cfLangs
 
   CV* = object
@@ -93,6 +98,7 @@ type
     projects*: Projects
     skills*: Skills
     langs*: Languages
+    bibliography*: string # The file to use for the bibliography, a `.bib` file
 
   PersonalInfo* = object
     name*: string

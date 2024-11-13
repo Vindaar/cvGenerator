@@ -10,6 +10,9 @@ type
   ## object they reference (e.g. the `name` field of the `PersonalInfo` object),
   ## because we use a macro to assign them.
   Config* = object
+    # Style / layout config
+    ## XXX: support in all sections! Currently only after work!
+    newPageAfter*: seq[string] # Hand a single element tuple with a section name after which you want a `\newpage`
     # personal information configuration
     pKey* = "personal_info" # CUSTOM_ID in the Org file
     pName* = "Name"

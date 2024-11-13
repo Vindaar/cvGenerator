@@ -209,6 +209,9 @@ proc work(cv: CV): string =
       `desc`
       \divider
     result.add event
+  if cv.cfg.wKey in cv.cfg.newPageAfter:
+    result.add latex do:
+      \newpage
 
 proc dayInLife(): string =
   let wheel = latex:
